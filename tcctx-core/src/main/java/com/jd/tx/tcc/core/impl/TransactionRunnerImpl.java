@@ -6,7 +6,7 @@ import com.jd.tx.tcc.core.exception.SOATxUnrecoverableException;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.springframework.util.Assert;
+import org.apache.commons.lang3.Validate;
 
 import java.util.List;
 
@@ -22,10 +22,10 @@ public class TransactionRunnerImpl implements TransactionRunner {
 
     @Override
     public void run(@NonNull TransactionContext context) {
-        Assert.notNull(context.getId());
-        Assert.notNull(context.getKey());
-        Assert.notNull(context.getState());
-        Assert.notNull(transactionManager);
+        Validate.notNull(context.getId());
+        Validate.notNull(context.getKey());
+        Validate.notNull(context.getState());
+        Validate.notNull(transactionManager);
 
         TransactionResource resource = transactionManager.getResource(context.getKey());
         for (ResourceItem item : resource.getResourceItems()) {

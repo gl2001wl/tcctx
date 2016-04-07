@@ -10,8 +10,9 @@ import com.jd.tx.tcc.core.TransactionRunner;
 import com.jd.tx.tcc.core.impl.CommonTransactionContext;
 import com.jd.tx.tcc.core.impl.JDBCHelper;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.quartz.JobExecutionException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
@@ -24,19 +25,24 @@ import java.util.Map;
  */
 public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasticJob<Map<String, String>> {
 
+//    @Setter
+//    private int sleepTime;
+
     private TransactionRunner transactionRunner;
 
+    Map<String, DataSource> dataSourceMap;
+
+    private String dbPrefix;
+
     public SyncJobRetryScheduler() {
-        transactionRunner = (TransactionRunner) SpingContextManager.get().getBean("transactionRunner");
     }
 
     private DataSource getDataSource(JSONObject jsonObject) {
-        String dataSourceId = jsonObject.getString("dataSource");
-        Assert.notNull(dataSourceId);
+        int dataSourceId = NumberUtils.toInt(jsonObject.getString("dataSource"));
 
-        ApplicationContext appContext = SpingContextManager.get();
-        DataSource dataSource = (DataSource) appContext.getBean(dataSourceId);
-        return dataSource;
+//        ApplicationContext appContext = SpingContextManager.get();
+        String dataSourceKey = StringUtils.isBlank(dbPrefix) ? String.valueOf(dataSourceId) : dbPrefix + dataSourceId;
+        return dataSourceMap.get(dataSourceKey);
     }
 
     private String getKey(JSONObject jsonObject) {
@@ -65,6 +71,19 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
         List<Map<String, String>> timeoutItems = JDBCHelper.findTimeoutItems(context, resource,
                 shardingContext.getShardingTotalCount(), shardingContext.getShardingItems());
 
+        // Never stop the beat :)
+        // Check timeout records every #sleepTime# seconds.
+        // If current thread interrupted, need to restart it manually.
+//        while (CollectionUtils.isEmpty(timeoutItems)) {
+//            try {
+//                Thread.sleep(sleepTime * 1000);
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//                throw new RuntimeException(e.getMessage(), e);
+//            }
+//            timeoutItems = JDBCHelper.findTimeoutItems(context, resource,
+//                    shardingContext.getShardingTotalCount(), shardingContext.getShardingItems());
+//        }
         return timeoutItems;
     }
 
@@ -113,4 +132,15 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
         throw jobExecutionException;
     }
 
+    public void setTransactionRunner(TransactionRunner transactionRunner) {
+        this.transactionRunner = transactionRunner;
+    }
+
+    public void setDataSourceMap(Map<String, DataSource> dataSourceMap) {
+        this.dataSourceMap = dataSourceMap;
+    }
+
+    public void setDbPrefix(String dbPrefix) {
+        this.dbPrefix = dbPrefix;
+    }
 }

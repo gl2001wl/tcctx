@@ -47,7 +47,7 @@ public class JDBCHelper {
 
         List<Object> paramList = new ArrayList<Object>(4);
         StringBuilder sql = new StringBuilder()
-                .append("updateState ")
+                .append("update ")
                 .append(resource.getTable())
                 .append(" set ")
                 .append(resource.getStateCol())

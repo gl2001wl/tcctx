@@ -57,14 +57,14 @@ public class CommonTransactionContext<T> implements TransactionContext<T> {
         return resourceObject;
     }
 
-    @Override
-    public int getTimeoutForRetry() {
-        return timeoutForRetry;
-    }
-
-    @Override
-    public int getSelectLimitForRetry() {
-        return selectLimitForRetry;
-    }
+//    @Override
+//    public int getTimeoutForRetry() {
+//        return timeoutForRetry;
+//    }
+//
+//    @Override
+//    public int getSelectLimitForRetry() {
+//        return selectLimitForRetry;
+//    }
 
 }

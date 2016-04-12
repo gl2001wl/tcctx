@@ -7,8 +7,10 @@ import com.dangdang.ddframe.job.plugin.job.type.dataflow.AbstractBatchThroughput
 import com.jd.tx.tcc.core.TransactionManager;
 import com.jd.tx.tcc.core.TransactionResource;
 import com.jd.tx.tcc.core.TransactionRunner;
+import com.jd.tx.tcc.core.entity.TransactionEntity;
 import com.jd.tx.tcc.core.impl.CommonTransactionContext;
 import com.jd.tx.tcc.core.impl.JDBCHelper;
+import com.jd.tx.tcc.core.query.TransactionQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -23,7 +25,7 @@ import java.util.Map;
  * @author Leon Guo
  *         Creation Date: 2016/2/26
  */
-public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasticJob<Map<String, String>> {
+public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasticJob<TransactionEntity> {
 
 //    @Setter
 //    private int sleepTime;
@@ -33,6 +35,8 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     Map<String, DataSource> dataSourceMap;
 
     private String dbPrefix;
+
+    private String lastId;
 
     public SyncJobRetryScheduler() {
     }
@@ -52,7 +56,7 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     }
 
     @Override
-    public List<Map<String, String>> fetchData(JobExecutionMultipleShardingContext shardingContext) {
+    public List<TransactionEntity> fetchData(JobExecutionMultipleShardingContext shardingContext) {
         Assert.notNull(shardingContext);
         Assert.notNull(shardingContext.getJobParameter());
 
@@ -68,8 +72,18 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
         context.setKey(key);
         context.setDataSource(dataSource);
 
-        List<Map<String, String>> timeoutItems = JDBCHelper.findTimeoutItems(context, resource,
-                shardingContext.getShardingTotalCount(), shardingContext.getShardingItems());
+        TransactionQuery query = new TransactionQuery(context, resource)
+                .setSharding(shardingContext.getShardingTotalCount(), shardingContext.getShardingItems())
+                .setMinutesBefore(2)
+                .setQueryRows(200);
+        if (StringUtils.isNotBlank(lastId)) {
+            query.setLastId(lastId);
+        }
+        List<TransactionEntity> timeoutItems = query.query();
+
+        if (CollectionUtils.isNotEmpty(timeoutItems)) {
+            lastId = timeoutItems.get(timeoutItems.size() - 1).getId();
+        }
 
         // Never stop the beat :)
         // Check timeout records every #sleepTime# seconds.
@@ -88,7 +102,7 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     }
 
     @Override
-    public int processData(JobExecutionMultipleShardingContext shardingContext, List<Map<String, String>> data) {
+    public int processData(JobExecutionMultipleShardingContext shardingContext, List<TransactionEntity> data) {
         if (CollectionUtils.isEmpty(data)) {
             return 0;
         }
@@ -98,18 +112,13 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
         DataSource dataSource = getDataSource(jsonObject);
 
         int successNum = 0;
-        for (Map<String, String> map : data) {
-            if (map.isEmpty()) {
-                return 0;
-            }
-
-            Map.Entry<String, String> entry = map.entrySet().iterator().next();
+        for (TransactionEntity entity : data) {
             CommonTransactionContext txContext = new CommonTransactionContext();
 
             txContext.setKey(shardingContext.getJobParameter());
             txContext.setDataSource(dataSource);
-            txContext.setId(entry.getKey());
-            txContext.setState(entry.getValue());
+            txContext.setId(entity.getId());
+            txContext.setState(entity.getState());
 
             try {
                 transactionRunner.run(txContext);

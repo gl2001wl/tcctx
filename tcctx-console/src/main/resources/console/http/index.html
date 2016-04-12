@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+    <title class="lang" langKey="xxxx">Tcc Tx Index</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf8"/>
+    <link href='css/bootstrap.min.css' rel="stylesheet"/>
+    <link href="css/style.css" type="text/css" rel="stylesheet"/>
+    <script src="js/doT.js" type="text/javascript" charset="utf8"></script>
+    <script type="text/javascript" src="js/jquery-2.2.3.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script src="js/lang.js" type="text/javascript" charset="utf8"></script>
+    <!--<script src="js/common.js" type="text/javascript" charset="utf8"></script>-->
+
+    <script type="text/javascript">
+        tcctx.txEntity = new function () {
+            var dataSourceKeys;
+            $.ajax({
+                type: 'GET',
+                url: "rest/dataSourceKey",
+                async: false,
+                success: function (data) {
+                    dataSourceKeys = data;
+                },
+                dataType: "json"
+            });
+
+            function getDataForTxEnityTable(dataSourceKey, varLastId) {
+                $.ajax({
+                    type: 'GET',
+                    url: "rest/transactionEntity?dataSourceKey=" + dataSourceKey + (varLastId ? "&lastId=" + varLastId : ""),
+                    async: false,
+                    success: function (data) {
+                        //Clone a new table from the template if it doesn't exist.
+                        if ($("#" + dataSourceKey).length < 1) {
+                            var tmpl = $('#tx-entity-tmpl').html();
+                            var doTtmpl = doT.template(tmpl);
+                            var contentHtml = doTtmpl({dataSourceKey: dataSourceKey});
+                            $(".span12 h3").after(contentHtml);
+                        }
+
+                        for (var j in data) {
+                            var row = $("<tr><td>" + data[j].id + "</td><td>" + data[j].state + "</td><td>" + data[j].handleTime + "</td></tr>");
+                            $("#" + dataSourceKey + " > tbody").append(row);
+                            $("#" + dataSourceKey).data("lastId", data[j].id);
+                        }
+
+                        $("#" + dataSourceKey + " ~ button").click(function () {
+                            if (!$("#" + dataSourceKey).data("lastId")) {
+                                alert("No more data!");
+                                return;
+                            }
+                            getDataForTxEnityTable(dataSourceKey, $("#" + dataSourceKey).data("lastId"));
+                        });
+                    },
+                    dataType: "json"
+                });
+                tcctx.lang.trigger();
+            }
+
+            return {
+                init: function () {
+                    this.initTxEntityTables();
+                    tcctx.lang.init();
+                },
+                initTxEntityTables: function() {
+                    for (var keyIndex in dataSourceKeys) {
+                        getDataForTxEnityTable(dataSourceKeys[keyIndex]);
+                    }
+                }
+            }
+        };
+
+        $(document).ready(function () {
+            tcctx.txEntity.init();
+        });
+    </script>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row-fluid">
+        <div class="span12">
+            <h3>
+            </h3>
+        </div>
+    </div>
+</div>
+
+<script id="tx-entity-tmpl" type="text/template">
+    <div class="panel panel-default">
+        <!-- Default panel contents -->
+        <div class="panel-heading lang" langKey="TimeoutTableHeader"></div>
+        <div class="panel-body">
+            <!--<p class="lang" langKey="TimeoutTableDesc"></p>-->
+            <p>Data Source Key: {{=it.dataSourceKey}}</p>
+        </div>
+
+        <!-- Table -->
+        <table id="{{=it.dataSourceKey}}" class="table">
+            <thead>
+            <tr>
+                <th class="lang" langKey="IDTbHeader"></th>
+                <th class="lang" langKey="StateHeader"></th>
+                <th class="lang" langKey="HandleTimeHeader"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <!--<tr>-->
+            <!--<td>d1</td>-->
+            <!--<td>d2</td>-->
+            <!--<td>d3</td>-->
+            <!--</tr>-->
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-default btn-xs lang" langKey="GetMoreData"></button>
+    </div>
+</script>
+
+</body>
+</html>

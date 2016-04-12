@@ -2,13 +2,19 @@ package com.jd.tx.tcc.core.impl;
 
 import com.jd.tx.tcc.core.TransactionContext;
 import com.jd.tx.tcc.core.TransactionResource;
+import com.jd.tx.tcc.core.entity.TransactionEntity;
+import com.jd.tx.tcc.core.query.TransactionQuery;
 import lombok.NonNull;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
-import java.util.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author Leon Guo
@@ -79,18 +85,17 @@ public class JDBCHelper {
     }
 
     /**
-     * Return the id and state of timeout transactions.
-     * @param context
-     * @param resource
-     * @param shardingCount
-     * @param shardingItems
+     * Return the entities of timeout transactions.
+     * @param query
      * @return
      */
-    public static List<Map<String, String>> findTimeoutItems(@NonNull TransactionContext context,
-                                                             @NonNull TransactionResource resource,
-                                                             int shardingCount,
-                                                             List<Integer> shardingItems) {
+    public static List<TransactionEntity> findTimeoutItems(@NonNull  TransactionQuery query) {
+        TransactionContext context = query.getContext();
+        Validate.notNull(context);
         Validate.notNull(context.getDataSource());
+
+        TransactionResource resource = query.getResource();
+        Validate.notNull(resource);
         Validate.notNull(resource.getTable());
         Validate.notNull(resource.getIdCol());
         Validate.notNull(resource.getStateCol());
@@ -101,49 +106,64 @@ public class JDBCHelper {
                 .append(resource.getIdCol())
                 .append(", ")
                 .append(resource.getStateCol())
+                .append(", ")
+                .append(resource.getHandleTimeCol())
                 .append(" from ")
                 .append(resource.getTable())
                 .append(" where ")
                 .append(resource.getHandleTimeCol())
                 .append(" < date_sub(now(), interval ? minute)");
 
-        if (shardingCount > 1) {
+        if (query.getShardingCount() > 1) {
             // Need sharding, got mode from sharding count.
             sql.append(" and MOD(UNIX_TIMESTAMP(").append(resource.getHandleTimeCol())
                     .append("), ?) in (");
             char split = 0;
-            for (int shardingItem : shardingItems) {
+            for (int shardingItem : query.getShardingItems()) {
                 sql.append(split == 0 ? "" : split).append("?");
                 split = ',';
             }
             sql.append(")");
         }
-        sql.append(" limit ?");
+        if (StringUtils.isNotBlank(query.getLastId())) {
+            sql.append(" and ")
+                    .append(resource.getIdCol())
+                    .append(" > ?");
+        }
+        sql.append(" order by ")
+                .append(resource.getIdCol())
+                .append(" limit ?");
 
         List<Object> paramList = new ArrayList<>();
-        paramList.add(context.getTimeoutForRetry() < 1 ? DEFAULT_TIMEOUT : context.getTimeoutForRetry());
-        if (shardingCount > 1) {
-            paramList.add(shardingCount);
-            for (Integer shardingItem : shardingItems) {
+        paramList.add(query.getMinutesBefore() < 1 ? DEFAULT_TIMEOUT : query.getMinutesBefore());
+        if (query.getShardingCount() > 1) {
+            paramList.add(query.getShardingCount());
+            for (Integer shardingItem : query.getShardingItems()) {
                 paramList.add(shardingItem);
             }
         }
-        paramList.add(context.getSelectLimitForRetry() < 1 ? DEFAULT_RETRY_ROWS : context.getSelectLimitForRetry());
-
-        List<Map<String, Object>> list =
-                new JdbcTemplate(context.getDataSource()).queryForList(sql.toString(), paramList.toArray());
-
-        List<Map<String, String>> result = new ArrayList<>(list == null ? 0 : list.size());
-        if (CollectionUtils.isEmpty(list)) {
-            return result;
+        if (StringUtils.isNotBlank(query.getLastId())) {
+            paramList.add(query.getLastId());
         }
-        for (Map<String, Object> rowMap : list) {
-            Map<String, String> resultMap = new HashMap<>(1);
-            resultMap.put(String.valueOf(rowMap.get(resource.getIdCol())),
-                    String.valueOf(rowMap.get(resource.getStateCol())));
-            result.add(resultMap);
-        }
-        return result;
+        paramList.add(query.getQueryRows() < 1 ? DEFAULT_RETRY_ROWS : query.getQueryRows());
+
+        List<TransactionEntity> list =
+                new JdbcTemplate(context.getDataSource()).query(sql.toString(),
+                        paramList.toArray(),
+                        new RowMapper() {
+
+                            @Override
+                            public TransactionEntity mapRow(ResultSet rs, int rowNum) throws SQLException {
+                                TransactionEntity entity = new TransactionEntity();
+                                entity.setId(rs.getString(1));
+                                entity.setState(rs.getString(2));
+                                entity.setHandleTime(rs.getDate(3));
+                                return entity;
+                            }
+
+                        });
+
+        return list;
     }
 
 }

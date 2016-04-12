@@ -42,12 +42,12 @@ public interface TransactionContext<T> {
      * Return the time out of transaction, need be retried in other async process.
      * @return
      */
-    int getTimeoutForRetry();
+//    int getTimeoutForRetry();
 
     /**
      * The max rows could be loaded for once in retry process.
      * @return
      */
-    int getSelectLimitForRetry();
+//    int getSelectLimitForRetry();
 
 }

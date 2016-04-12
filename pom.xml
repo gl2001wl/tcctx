@@ -11,6 +11,7 @@
     <modules>
         <module>tcctx-core</module>
         <module>tcctx-job</module>
+        <module>tcctx-console</module>
     </modules>
 
     <properties>

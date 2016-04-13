@@ -9,11 +9,12 @@ import com.jd.tx.tcc.core.TransactionResource;
 import com.jd.tx.tcc.core.TransactionRunner;
 import com.jd.tx.tcc.core.entity.TransactionEntity;
 import com.jd.tx.tcc.core.impl.CommonTransactionContext;
-import com.jd.tx.tcc.core.impl.JDBCHelper;
 import com.jd.tx.tcc.core.query.TransactionQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.quartz.JobExecutionException;
 import org.springframework.util.Assert;
 
@@ -27,6 +28,8 @@ import java.util.Map;
  */
 public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasticJob<TransactionEntity> {
 
+    private static final Log log = LogFactory.getLog(SyncJobRetryScheduler.class);
+
 //    @Setter
 //    private int sleepTime;
 
@@ -37,6 +40,10 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     private String dbPrefix;
 
     private String lastId;
+
+    private String key;
+
+    private DataSource dataSource;
 
     public SyncJobRetryScheduler() {
     }
@@ -62,8 +69,8 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
         String jobParameter = shardingContext.getJobParameter();
         JSONObject jsonObject = (JSONObject) JSON.parse(jobParameter);
-        String key = getKey(jsonObject);
-        DataSource dataSource = getDataSource(jsonObject);
+        key = getKey(jsonObject);
+        dataSource = getDataSource(jsonObject);
 
         TransactionManager transactionManager = transactionRunner.getTransactionManager();
         TransactionResource resource = transactionManager.getResource(key);
@@ -83,6 +90,9 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
         if (CollectionUtils.isNotEmpty(timeoutItems)) {
             lastId = timeoutItems.get(timeoutItems.size() - 1).getId();
+        } else {
+            //If no more data, set the lastId to null, make it load data from the very beginning in the next schedule time.
+            lastId = null;
         }
 
         // Never stop the beat :)
@@ -107,15 +117,16 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
             return 0;
         }
 
-        String jobParameter = shardingContext.getJobParameter();
-        JSONObject jsonObject = (JSONObject) JSON.parse(jobParameter);
-        DataSource dataSource = getDataSource(jsonObject);
+//        String jobParameter = shardingContext.getJobParameter();
+//        JSONObject jsonObject = (JSONObject) JSON.parse(jobParameter);
+//        DataSource dataSource = getDataSource(jsonObject);
+//        String key = getKey(jsonObject);
 
         int successNum = 0;
         for (TransactionEntity entity : data) {
             CommonTransactionContext txContext = new CommonTransactionContext();
 
-            txContext.setKey(shardingContext.getJobParameter());
+            txContext.setKey(key);
             txContext.setDataSource(dataSource);
             txContext.setId(entity.getId());
             txContext.setState(entity.getState());
@@ -125,6 +136,7 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
                 successNum++;
             } catch (Throwable e) {
                 //todo: log exception and continue execute others
+                log.error(e.getMessage(), e);
             }
         }
         return successNum;

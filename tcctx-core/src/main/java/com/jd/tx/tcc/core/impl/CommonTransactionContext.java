@@ -23,7 +23,7 @@ public class CommonTransactionContext<T> implements TransactionContext<T> {
 
     @Setter private String state;
 
-    @Setter private T resourceObject;
+    private T resourceObject;
 
     @Setter private int timeoutForRetry;
 
@@ -55,6 +55,11 @@ public class CommonTransactionContext<T> implements TransactionContext<T> {
     @Override
     public T getResourceObject() {
         return resourceObject;
+    }
+
+    @Override
+    public void setResourceObject(T resourceObject) {
+        this.resourceObject = resourceObject;
     }
 
 //    @Override

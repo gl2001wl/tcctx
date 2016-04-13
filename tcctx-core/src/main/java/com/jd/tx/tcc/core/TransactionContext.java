@@ -38,6 +38,8 @@ public interface TransactionContext<T> {
      */
     T getResourceObject();
 
+    void setResourceObject(T resourceObject);
+
     /**
      * Return the time out of transaction, need be retried in other async process.
      * @return

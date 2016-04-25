@@ -18,8 +18,8 @@ public class SeqStateGenerator implements StateGenerator {
     public void generatorStates(List<ResourceItem> resourceItems) {
         Validate.notNull(resourceItems);
 
-        for (int i = 1; i < resourceItems.size(); i++) {
-            ResourceItem resourceItem = resourceItems.get(i);
+        for (int i = 1; i <= resourceItems.size(); i++) {
+            ResourceItem resourceItem = resourceItems.get(i - 1);
             int index = resourceItem.getStateIndex() == null ? i : resourceItem.getStateIndex();
             BiMap<ResourceItem.State, String> stateMap = new ImmutableBiMap.Builder<ResourceItem.State, String>()
                     .put(ResourceItem.State.begin, (index * 10) + "0")

@@ -63,6 +63,7 @@ mvn -DskipTests=true package
 需要注意的是在try, confirm, cancel的业务方法中，如果出现异常，可以选择两种抛出方式：
 * [SOATxUnawareException](http://git.jd.com/pop-commons/jd-tcctx/blob/master/tcctx-core/src/main/java/com/jd/tx/tcc/core/exception/SOATxUnawareException.java)
 * [SOATxUnrecoverableException](http://git.jd.com/pop-commons/jd-tcctx/blob/master/tcctx-core/src/main/java/com/jd/tx/tcc/core/exception/SOATxUnrecoverableException.java)
+
 > 当抛出`SOATxUnawareException`或其他继承自`Throwable`的异常后，事务流程认为发生了不可预期的异常（例如网络超时等），当前事务线程会中断并直接抛出该异常，但是保留当前事务，后续会有异步任务自动根据当前状态进行重试。
 > 而当抛出`SOATxUnrecoverableException`后，事务流程认为发生了预期进行回滚的异常（例如资源预占失败，数据库主键重复等可预期的异常），事务流程会依次调用当前节点直至最初节点的`cancelTx()`方法，直到全部回滚成功并抛出该异常。
 
@@ -88,7 +89,7 @@ mvn -DskipTests=true package
         <!-- 最后一次执行时间，用于计算是否超时任务 -->
         <property name="handleTimeCol" value="last_handle_time"/>
         <!-- 事务状态码生成器，可以自己实现或者通过代码生成 -->
-        <property name-"stateGenerator" ref="seqStateGenerator" />
+        <property name="stateGenerator" ref="seqStateGenerator" />
         <property name="resourceItems">
             <list>
                 <!-- 注意：次序为事务执行次序，具体实现为ResourceItem的实现类 -->
@@ -105,7 +106,7 @@ mvn -DskipTests=true package
 ##### 3.2 配置事务资源管理器
 
 样例：
-```
+```xml
     <!-- 事务资源管理器 -->
     <bean id="transactionManager" class="com.jd.tx.tcc.core.TransactionManager">
         <property name="resourcesMap">
@@ -120,19 +121,19 @@ mvn -DskipTests=true package
 ##### 3.3 配置提交执行器
 
 目前默认只提供了一种实现：
-```
+```xml
     <bean id="transactionRunner" class="com.jd.tx.tcc.core.impl.TransactionRunnerImpl"/>
 ```
 
 #### 4. 在代码中提交TCC事务
 
 首先获得spring context中的`TransactionRunner`
-```
+```java
 @Autowired
 private TransactionRunner transactionRunner;
 ```
 构建TransactionContext，需要传入事务主表所需的`DataSource`和本次事务主对象txObject
-```
+```java
     TransactionContext context = TXContextFactory.buildNew(dataSource, txObject);
 ...
     //此处的key与事务资源管理器中的key相对应
@@ -152,13 +153,13 @@ private TransactionRunner transactionRunner;
     }
 ```
 提交事务，如果抛出`SOATxUnawareException`表示事务进入异步重试流程。如果抛出`SOATxUnrecoverableException`表示事务失败，没有提交成功或者全部回滚完成。
-```
+```java
 transactionRunner.run(context);
 ```
 #### 5. 异步重试任务的配置
 
 使用了elastic-job进行异步任务的驱动，样例：
-```
+```xml
     <!-- 失败积分换券重处理作业-->
     <bean id="point2CouponRetryJob" class="com.jd.tx.tcc.job.SyncJobRetryScheduler">
         <property name="transactionRunner" ref="transactionRunner" />
@@ -188,7 +189,7 @@ transactionRunner.run(context);
 #### 6. 积压中任务的监控
 
 配置servlet：
-```
+```xml
     <!--TccTx monitor page-->
     <servlet>
         <servlet-name>TccTxEntityView</servlet-name>

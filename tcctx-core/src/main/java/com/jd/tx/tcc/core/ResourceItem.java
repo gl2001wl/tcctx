@@ -59,6 +59,12 @@ public interface ResourceItem<T> {
     void setStateMapping(BiMap<State, String> stateMapping);
 
     /**
+     *  Return the index for generate state code, use the index in resource manager if return null.
+     * @return
+     */
+    Integer getStateIndex();
+
+    /**
      * Transaction state for getIfUpdateStateAfterAction()
      */
     enum State {

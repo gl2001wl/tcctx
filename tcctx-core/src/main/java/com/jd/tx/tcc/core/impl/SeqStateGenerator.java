@@ -20,14 +20,15 @@ public class SeqStateGenerator implements StateGenerator {
 
         for (int i = 1; i < resourceItems.size(); i++) {
             ResourceItem resourceItem = resourceItems.get(i);
+            int index = resourceItem.getStateIndex() == null ? i : resourceItem.getStateIndex();
             BiMap<ResourceItem.State, String> stateMap = new ImmutableBiMap.Builder<ResourceItem.State, String>()
-                    .put(ResourceItem.State.begin, (i * 10) + "0")
-                    .put(ResourceItem.State.trySuccess, (i * 10 + 1) + "1")
-                    .put(ResourceItem.State.tryFailed, (i * 10 + 1) + "0")
-                    .put(ResourceItem.State.confirmSuccess, (i * 10 + 2) + "1")
-                    .put(ResourceItem.State.confirmFailed, (i * 10 + 2) + "0")
-                    .put(ResourceItem.State.cancelSuccess, (i * 10 + 3) + "1")
-                    .put(ResourceItem.State.cancelFailed, (i * 10 + 3) + "0")
+                    .put(ResourceItem.State.begin, (index * 10) + "0")
+                    .put(ResourceItem.State.trySuccess, (index * 10 + 1) + "1")
+                    .put(ResourceItem.State.tryFailed, (index * 10 + 1) + "0")
+                    .put(ResourceItem.State.confirmSuccess, (index * 10 + 2) + "1")
+                    .put(ResourceItem.State.confirmFailed, (index * 10 + 2) + "0")
+                    .put(ResourceItem.State.cancelSuccess, (index * 10 + 3) + "1")
+                    .put(ResourceItem.State.cancelFailed, (index * 10 + 3) + "0")
                     .build();
             resourceItem.setStateMapping(stateMap);
         }

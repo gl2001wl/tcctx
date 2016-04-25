@@ -68,4 +68,140 @@ mvn -DskipTests=true package
 
 **也就是说tcctx是以抛出异常的类型进行事务流程驱动的**
 
+#### 3. 在spring中配置TCC事务
+
+##### 3.1 配置事务主表和子事务相关
+
+样例：
+```xml
+    <bean id="points2CouponTxRes" class="com.jd.tx.tcc.core.TransactionResource">
+        <!-- 事务主表表名 -->
+        <property name="table" value="crm_cust_p_freeze"/>
+        <!-- 主键，必须唯一 -->
+        <property name="idCol" value="business_id"/>
+        <!-- 事务状态 -->
+        <property name="stateCol" value="status"/>
+        <!-- 事务最后一次执行日志，用于失败重试任务的监控，可以没有此字段 -->
+        <property name="msgCol" value="process_msg"/>
+        <!-- 当存在msgCol字段时，能够存储msg的最大长度 -->
+        <property name="msgMaxLength" value="500"/>
+        <!-- 最后一次执行时间，用于计算是否超时任务 -->
+        <property name="handleTimeCol" value="last_handle_time"/>
+        <!-- 事务状态码生成器，可以自己实现或者通过代码生成 -->
+        <property name-"stateGenerator" ref="seqStateGenerator" />
+        <property name="resourceItems">
+            <list>
+                <!-- 注意：次序为事务执行次序，具体实现为ResourceItem的实现类 -->
+                <ref bean="sendCouponAction" />
+                <ref bean="decreasePointsAction" />
+            </list>
+        </property>
+    </bean>
+    
+    <!-- 默认提供的顺序状态吗生成器 -->
+    <bean id="seqStateGenerator" class="com.jd.tx.tcc.core.impl.SeqStateGenerator" />
+```
+
+##### 3.2 配置事务资源管理器
+
+样例：
+```
+    <!-- 事务资源管理器 -->
+    <bean id="transactionManager" class="com.jd.tx.tcc.core.TransactionManager">
+        <property name="resourcesMap">
+            <map>
+                <!-- 注册上一步配置的事务定义，并给予唯一key主键，如果一个容器内有多个TCC事务，需要定义不同的实现并用key区分 -->
+                <entry key="points2Coupon" value-ref="points2CouponTxRes"/>
+            </map>
+        </property>
+    </bean>
+```
+
+##### 3.3 配置提交执行器
+
+目前默认只提供了一种实现：
+```
+    <bean id="transactionRunner" class="com.jd.tx.tcc.core.impl.TransactionRunnerImpl"/>
+```
+
+#### 4. 在代码中提交TCC事务
+
+首先获得spring context中的`TransactionRunner`
+```
+@Autowired
+private TransactionRunner transactionRunner;
+```
+构建TransactionContext，需要传入事务主表所需的`DataSource`和本次事务主对象txObject
+```
+    TransactionContext context = TXContextFactory.buildNew(dataSource, txObject);
+...
+    //此处的key与事务资源管理器中的key相对应
+    public static final String CONTEXT_KEY = "points2Coupon";
+
+    public static CommonTransactionContext<CustomerPointsFreeze> buildNew(
+            DataSource dataSource,
+            CustomerPointsFreeze pointsFreeze) {
+        CommonTransactionContext context = new CommonTransactionContext();
+        context.setKey(CONTEXT_KEY);
+        context.setDataSource(dataSource);
+        context.setId(pointsFreeze.getBusinessId());
+        context.setResourceObject(pointsFreeze);
+        //新提交的状态都为begin
+        context.setState(TradeCouponState.SEND_COUPON_STATE.get(ResourceItem.State.begin));
+        return context;
+    }
+```
+提交事务，如果抛出`SOATxUnawareException`表示事务进入异步重试流程。如果抛出`SOATxUnrecoverableException`表示事务失败，没有提交成功或者全部回滚完成。
+```
+transactionRunner.run(context);
+```
+#### 5. 异步重试任务的配置
+
+使用了elastic-job进行异步任务的驱动，样例：
+```
+    <!-- 失败积分换券重处理作业-->
+    <bean id="point2CouponRetryJob" class="com.jd.tx.tcc.job.SyncJobRetryScheduler">
+        <property name="transactionRunner" ref="transactionRunner" />
+        <property name="dataSourceMap" ref="dataSourceMap" />
+        <property name="dbPrefix" value="db" />
+    </bean>
+
+    <!-- 失败积分换券重处理任务-->
+    <bean id="point2CouponRetryScheduler" class="com.dangdang.ddframe.job.spring.schedule.SpringJobScheduler" init-method="init">
+        <constructor-arg ref="regCenter" />
+        <constructor-arg>
+            <bean class="com.dangdang.ddframe.job.api.JobConfiguration">
+                <constructor-arg index="0" type="java.lang.String" value="tradePointsRetryScheduler" />
+                <constructor-arg index="1" value="com.jd.tx.tcc.job.SyncJobRetryScheduler" />
+                <constructor-arg index="2" type="int" value="3" />
+                <constructor-arg index="3" type="java.lang.String" value="0 0/1 * * * ?" />
+                <property name="shardingItemParameters" value="0=0,1=1,2=2" />
+                <!-- the key in soa tx -->
+                <property name="jobParameter" value="{key: 'points2Coupon', dataSource: '2'}" />
+                <property name="overwrite" value="true" />
+                <property name="disabled" value="false" />
+            </bean>
+        </constructor-arg>
+    </bean>
+```
+
+#### 6. 积压中任务的监控
+
+配置servlet：
+```
+    <!--TccTx monitor page-->
+    <servlet>
+        <servlet-name>TccTxEntityView</servlet-name>
+        <servlet-class>com.jd.tx.tcc.console.TXMonitorServlet</servlet-class>
+        <init-param>
+            <param-name>queryBeanName</param-name>
+            <param-value>transactionQueryService</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TccTxEntityView</servlet-name>
+        <url-pattern>/tcctx/*</url-pattern>
+    </servlet-mapping>
+```
+启动web容器后，访问`http://yoursite/tccctx/index.html`进行监控
 

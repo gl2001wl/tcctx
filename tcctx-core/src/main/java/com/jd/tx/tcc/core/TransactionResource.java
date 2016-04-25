@@ -29,6 +29,18 @@ public class TransactionResource {
     private StateGenerator stateGenerator;
 
     /**
+     *  Return the beginning state of first tx item.
+     *  Return null if doesn't have tx items.
+     * @return
+     */
+    public String getBeginningState() {
+        if (CollectionUtils.isEmpty(resourceItems)) {
+            return null;
+        }
+        return (String) resourceItems.get(0).getStateMapping().get(ResourceItem.State.begin);
+    }
+
+    /**
      *  If use this bean spring, should invoke it in init-method, or invoke it in the very beginning.
      */
     public void init() {

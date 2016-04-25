@@ -74,7 +74,7 @@ mvn -DskipTests=true package
 
 样例：
 ```xml
-    <bean id="points2CouponTxRes" class="com.jd.tx.tcc.core.TransactionResource">
+    <bean id="points2CouponTxRes" class="com.jd.tx.tcc.core.TransactionResource" init-method="init">
         <!-- 事务主表表名 -->
         <property name="table" value="crm_cust_p_freeze"/>
         <!-- 主键，必须唯一 -->
@@ -98,7 +98,7 @@ mvn -DskipTests=true package
         </property>
     </bean>
     
-    <!-- 默认提供的顺序状态吗生成器 -->
+    <!-- 默认提供的顺序状态码生成器 -->
     <bean id="seqStateGenerator" class="com.jd.tx.tcc.core.impl.SeqStateGenerator" />
 ```
 
@@ -147,7 +147,7 @@ private TransactionRunner transactionRunner;
         context.setId(pointsFreeze.getBusinessId());
         context.setResourceObject(pointsFreeze);
         //新提交的状态都为begin
-        context.setState(TradeCouponState.SEND_COUPON_STATE.get(ResourceItem.State.begin));
+        context.setState(transactionResource.getBeginningState());
         return context;
     }
 ```

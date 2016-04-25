@@ -12,7 +12,6 @@ import com.jd.tx.tcc.core.impl.CommonTransactionContext;
 import com.jd.tx.tcc.core.query.TransactionQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.quartz.JobExecutionException;
@@ -49,10 +48,11 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     }
 
     private DataSource getDataSource(JSONObject jsonObject) {
-        int dataSourceId = NumberUtils.toInt(jsonObject.getString("dataSource"));
+        String dataSourceId = jsonObject.getString("dataSource");
+        dataSourceId = dataSourceId == null? "" : dataSourceId;
 
 //        ApplicationContext appContext = SpingContextManager.get();
-        String dataSourceKey = StringUtils.isBlank(dbPrefix) ? String.valueOf(dataSourceId) : dbPrefix + dataSourceId;
+        String dataSourceKey = StringUtils.isBlank(dbPrefix) ? dataSourceId : dbPrefix + dataSourceId;
         return dataSourceMap.get(dataSourceKey);
     }
 

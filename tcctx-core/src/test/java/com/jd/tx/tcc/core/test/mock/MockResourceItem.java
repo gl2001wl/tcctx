@@ -92,6 +92,17 @@ public class MockResourceItem implements ResourceItem {
         return spyItem;
     }
 
+    public MockResourceItem emptyTry() {
+        doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+                Object[] args = invocation.getArguments();
+                LOG.info("called try with arguments: " + args);
+                return null;
+            }
+        }).when(this).tryTx(any(TransactionContext.class));
+        return this;
+    }
+
     public MockResourceItem emptyCommit() {
         doAnswer(new Answer<Void>() {
             public Void answer(InvocationOnMock invocation) {
@@ -122,6 +133,30 @@ public class MockResourceItem implements ResourceItem {
     public MockResourceItem throwUnrecoverableExWhenCommit() {
         doThrow(new SOATxUnrecoverableException("unrecoverable exception"))
                 .when(this).confirmTx(any(TransactionContext.class));
+        return this;
+    }
+
+    public MockResourceItem throwUnawareExWhenTry() {
+        doThrow(new SOATxUnawareException("unaware exception"))
+                .when(this).tryTx(any(TransactionContext.class));
+        return this;
+    }
+
+    public MockResourceItem throwUnrecoverableExWhenTry() {
+        doThrow(new SOATxUnrecoverableException("unrecoverable exception"))
+                .when(this).tryTx(any(TransactionContext.class));
+        return this;
+    }
+
+    public MockResourceItem throwUnawareExWhenCancel() {
+        doThrow(new SOATxUnawareException("unaware exception"))
+                .when(this).cancelTx(any(TransactionContext.class));
+        return this;
+    }
+
+    public MockResourceItem throwUnrecoverableExWhenCancel() {
+        doThrow(new SOATxUnrecoverableException("unrecoverable exception"))
+                .when(this).cancelTx(any(TransactionContext.class));
         return this;
     }
 

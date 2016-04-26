@@ -93,7 +93,7 @@ public class TestTransactionRunner {
     }
 
     @Test
-    public void testInterruptFlow() throws SQLException {
+    public void testInterruptCommitFlow() throws SQLException {
         LOG.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().noTry().throwUnawareExWhenCommit());
@@ -135,7 +135,7 @@ public class TestTransactionRunner {
     }
 
     @Test
-    public void testCancelFlow() throws SQLException {
+    public void testCancelCommitFlow() throws SQLException {
         LOG.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().noTry().throwUnrecoverableExWhenCommit());
@@ -170,6 +170,123 @@ public class TestTransactionRunner {
         Assert.assertEquals("[997, "
                         + txRes.getResourceItems().get(0).getStateMapping().get(ResourceItem.State.cancelSuccess)
                         + ", unrecoverable exception, "
+                        + today + "]",
+                dbValue);
+    }
+
+    @Test
+    public void testInterruptTryFlow() throws SQLException {
+        LOG.info("begin test tx runner");
+        txRes.getResourceItems().add(MockResourceItem.buildMock());
+        txRes.getResourceItems().add(MockResourceItem.buildMock().throwUnawareExWhenTry());
+        txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry());
+        txRes.init();
+
+        CommonTransactionContext context = buildContext("996");
+
+        try {
+            txRunner.run(context);
+            fail("No SOATxUnawareException be thrown!");
+        } catch (SOATxUnawareException e) {
+            LOG.info("got SOATxUnawareException successful!");
+        }
+
+        verify(txRes.getResourceItems().get(0), times(0)).confirmTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(0)).confirmTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(0)).confirmTx(any(TransactionContext.class));
+
+        verify(txRes.getResourceItems().get(0), times(0)).cancelTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(0)).cancelTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(0)).cancelTx(any(TransactionContext.class));
+
+        verify(txRes.getResourceItems().get(0), times(1)).tryTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(1)).tryTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(0)).tryTx(any(TransactionContext.class));
+
+        String dbValue = TestTableManager.query("996");
+        LOG.info(dbValue);
+        String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+        Assert.assertEquals("[996, "
+                        + txRes.getResourceItems().get(0).getStateMapping().get(ResourceItem.State.trySuccess)
+                        + ", unit test, "
+                        + today + "]",
+                dbValue);
+    }
+
+    @Test
+    public void testCancelTryFlow() throws SQLException {
+        LOG.info("begin test tx runner");
+        txRes.getResourceItems().add(MockResourceItem.buildMock());
+        txRes.getResourceItems().add(MockResourceItem.buildMock().throwUnrecoverableExWhenTry());
+        txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry());
+        txRes.init();
+
+        CommonTransactionContext context = buildContext("995");
+
+        try {
+            txRunner.run(context);
+            fail("No SOATxUnrecoverableException be thrown!");
+        } catch (SOATxUnrecoverableException e) {
+            LOG.info("got SOATxUnrecoverableException successful!");
+        }
+
+        verify(txRes.getResourceItems().get(0), times(0)).confirmTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(0)).confirmTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(0)).confirmTx(any(TransactionContext.class));
+
+        verify(txRes.getResourceItems().get(0), times(1)).cancelTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(0)).cancelTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(0)).cancelTx(any(TransactionContext.class));
+
+        verify(txRes.getResourceItems().get(0), times(1)).tryTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(1)).tryTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(0)).tryTx(any(TransactionContext.class));
+
+        String dbValue = TestTableManager.query("995");
+        LOG.info(dbValue);
+        String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+        Assert.assertEquals("[995, "
+                        + txRes.getResourceItems().get(0).getStateMapping().get(ResourceItem.State.cancelSuccess)
+                        + ", unrecoverable exception, "
+                        + today + "]",
+                dbValue);
+    }
+
+    @Test
+    public void testInterruptCancelFlow() throws SQLException {
+        LOG.info("begin test tx runner");
+        txRes.getResourceItems().add(MockResourceItem.buildMock());
+        txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry().throwUnawareExWhenCancel());
+        txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry().throwUnrecoverableExWhenCommit());
+        txRes.init();
+
+        CommonTransactionContext context = buildContext("994");
+
+        try {
+            txRunner.run(context);
+            fail("No SOATxUnawareException be thrown!");
+        } catch (SOATxUnawareException e) {
+            LOG.info("got SOATxUnawareException successful!");
+        }
+
+        verify(txRes.getResourceItems().get(0), times(1)).confirmTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(1)).confirmTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(1)).confirmTx(any(TransactionContext.class));
+
+        verify(txRes.getResourceItems().get(0), times(0)).cancelTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(1)).cancelTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(1)).cancelTx(any(TransactionContext.class));
+
+        verify(txRes.getResourceItems().get(0), times(1)).tryTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(1), times(1)).tryTx(any(TransactionContext.class));
+        verify(txRes.getResourceItems().get(2), times(1)).tryTx(any(TransactionContext.class));
+
+        String dbValue = TestTableManager.query("994");
+        LOG.info(dbValue);
+        String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+        Assert.assertEquals("[994, "
+                        + txRes.getResourceItems().get(1).getStateMapping().get(ResourceItem.State.cancelFailed)
+                        + ", unaware exception, "
                         + today + "]",
                 dbValue);
     }

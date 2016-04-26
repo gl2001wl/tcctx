@@ -42,6 +42,14 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- 数据库单元测试 -->
+        <dependency>
+            <groupId>org.dbunit</groupId>
+            <artifactId>dbunit</artifactId>
+            <version>2.5.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

@@ -83,7 +83,7 @@ class CancelAction implements TransactionAction {
             throw e;
         }
         if (item.getIgnoreUpdateState() == null || !item.getIgnoreUpdateState().contains(ResourceItem.State.cancelSuccess)) {
-            JDBCHelper.updateState(context, resource, (String) item.getStateMapping().get(ResourceItem.State.confirmSuccess), null);
+            JDBCHelper.updateState(context, resource, (String) item.getStateMapping().get(ResourceItem.State.cancelSuccess), null);
         }
     }
 

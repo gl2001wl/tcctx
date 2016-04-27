@@ -1,5 +1,6 @@
 package com.jd.tx.tcc.core.query;
 
+import com.jd.tx.tcc.core.ResourceItem;
 import com.jd.tx.tcc.core.TransactionContext;
 import com.jd.tx.tcc.core.TransactionResource;
 import com.jd.tx.tcc.core.entity.TransactionEntity;
@@ -37,6 +38,9 @@ public class TransactionQuery {
     @Getter
     private List<Integer> shardingItems;
 
+    @Getter
+    private List<String> excludeStates;
+
     public TransactionQuery(@NonNull TransactionContext context, @NonNull TransactionResource resource) {
         this.context = context;
         this.resource = resource;
@@ -60,6 +64,11 @@ public class TransactionQuery {
     public TransactionQuery setSharding(int shardingCount, List<Integer> shardingItems) {
         this.shardingCount = shardingCount;
         this.shardingItems = shardingItems;
+        return this;
+    }
+
+    public TransactionQuery setExcludeStates(List<String> excludeStates) {
+        this.excludeStates = excludeStates;
         return this;
     }
 

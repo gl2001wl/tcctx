@@ -5,6 +5,7 @@ import com.jd.tx.tcc.core.TransactionResource;
 import com.jd.tx.tcc.core.entity.TransactionEntity;
 import com.jd.tx.tcc.core.query.TransactionQuery;
 import lombok.NonNull;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -112,8 +113,18 @@ public class JDBCHelper {
                 .append(resource.getTable())
                 .append(" where ")
                 .append(resource.getHandleTimeCol())
-                .append(" < date_sub(now(), interval ? minute)");
+                .append(" < date_sub(now(), interval ? minute)")
+                .append(" and ")
+                .append(resource.getStateCol())
+                .append(" IS NOT NULL");
 
+        if (CollectionUtils.isNotEmpty(query.getExcludeStates())) {
+            sql.append(" and ")
+                    .append(resource.getStateCol())
+                    .append(" not in ('")
+                    .append(StringUtils.join(query.getExcludeStates(), "','"))
+                    .append("')");
+        }
         if (query.getShardingCount() > 1) {
             // Need sharding, got mode from sharding count.
             sql.append(" and MOD(UNIX_TIMESTAMP(").append(resource.getHandleTimeCol())

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.dangdang.ddframe.job.api.JobExecutionMultipleShardingContext;
 import com.dangdang.ddframe.job.plugin.job.type.dataflow.AbstractBatchThroughputDataFlowElasticJob;
+import com.jd.tx.tcc.core.ResourceItem;
 import com.jd.tx.tcc.core.TransactionManager;
 import com.jd.tx.tcc.core.TransactionResource;
 import com.jd.tx.tcc.core.TransactionRunner;
@@ -18,6 +19,7 @@ import org.quartz.JobExecutionException;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -86,6 +88,7 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
         if (StringUtils.isNotBlank(lastId)) {
             query.setLastId(lastId);
         }
+        query.setExcludeStates(buildExcludeStates(resource.getResourceItems()));
         List<TransactionEntity> timeoutItems = query.query();
 
         if (CollectionUtils.isNotEmpty(timeoutItems)) {
@@ -109,6 +112,17 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 //                    shardingContext.getShardingTotalCount(), shardingContext.getShardingItems());
 //        }
         return timeoutItems;
+    }
+
+    private List<String> buildExcludeStates(List<ResourceItem> resourceItems) {
+        List<String> excludeStates = new ArrayList<>();
+        if (resourceItems.get(resourceItems.size() - 1).getStateMapping().get(ResourceItem.State.confirmSuccess) != null) {
+            excludeStates.add((String) resourceItems.get(resourceItems.size() - 1).getStateMapping().get(ResourceItem.State.confirmSuccess));
+        }
+        if (resourceItems.get(0).getStateMapping().get(ResourceItem.State.cancelSuccess) != null) {
+            excludeStates.add((String) resourceItems.get(0).getStateMapping().get(ResourceItem.State.cancelSuccess));
+        }
+        return excludeStates;
     }
 
     @Override

@@ -119,6 +119,30 @@ public class MockResourceItem implements ResourceItem {
         return this;
     }
 
+    public MockResourceItem insertInTry() {
+        doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+                Object[] args = invocation.getArguments();
+                TransactionContext context = (TransactionContext) args[0];
+                String insertSql = "insert into test_tcctx (id, status, process_msg, last_handle_time) values ('" +
+                        context.getId() +"', '" +
+                        context.getState() + "', " +
+                        "'unit test', " +
+                        "now()" +
+                        " )";
+                try {
+                    LOG.info("insert sql: " + insertSql);
+                    HsqlDatabase.getInstance().executeSql(insertSql);
+                } catch (Throwable e) {
+                    LOG.error(e.getMessage(), e);
+                    throw new SOATxUnawareException(e);
+                }
+                return null;
+            }
+        }).when(this).confirmTx(any(TransactionContext.class));
+        return this;
+    }
+
     public MockResourceItem noCancel() {
         when(this.hasCancel()).thenReturn(false);
         return this;

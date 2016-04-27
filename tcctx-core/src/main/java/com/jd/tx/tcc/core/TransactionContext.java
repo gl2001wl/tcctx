@@ -41,6 +41,12 @@ public interface TransactionContext<T> {
     void setResourceObject(T resourceObject);
 
     /**
+     *  Set current state
+     * @param state
+     */
+    void setState(String state);
+
+    /**
      * Return the time out of transaction, need be retried in other async process.
      * @return
      */

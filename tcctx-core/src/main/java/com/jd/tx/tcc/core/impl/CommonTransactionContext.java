@@ -21,7 +21,7 @@ public class CommonTransactionContext<T> implements TransactionContext<T> {
 
     @Setter private String id;
 
-    @Setter private String state;
+    private String state;
 
     private T resourceObject;
 
@@ -60,6 +60,11 @@ public class CommonTransactionContext<T> implements TransactionContext<T> {
     @Override
     public void setResourceObject(T resourceObject) {
         this.resourceObject = resourceObject;
+    }
+
+    @Override
+    public void setState(String state) {
+        this.state = state;
     }
 
 //    @Override

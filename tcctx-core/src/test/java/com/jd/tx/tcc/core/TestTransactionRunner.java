@@ -4,7 +4,7 @@ import com.jd.tx.tcc.core.exception.SOATxUnawareException;
 import com.jd.tx.tcc.core.exception.SOATxUnrecoverableException;
 import com.jd.tx.tcc.core.impl.CommonTransactionContext;
 import com.jd.tx.tcc.core.impl.SeqStateGenerator;
-import com.jd.tx.tcc.core.impl.TransactionRunnerImpl;
+import com.jd.tx.tcc.core.sync.SyncTransactionRunner;
 import com.jd.tx.tcc.core.test.hsql.HsqlDatabase;
 import com.jd.tx.tcc.core.test.hsql.TestTableManager;
 import com.jd.tx.tcc.core.test.mock.MockResourceItem;
@@ -59,7 +59,7 @@ public class TestTransactionRunner {
         TransactionManager txManager = new TransactionManager();
         txManager.setResourcesMap(resourceMap);
 
-        txRunner = new TransactionRunnerImpl();
+        txRunner = new SyncTransactionRunner();
         txRunner.setTransactionManager(txManager);
     }
 

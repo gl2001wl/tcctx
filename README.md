@@ -122,7 +122,7 @@ mvn -DskipTests=true package
 
 目前默认只提供了一种实现：
 ```xml
-    <bean id="transactionRunner" class="com.jd.tx.tcc.core.impl.TransactionRunnerImpl"/>
+    <bean id="transactionRunner" class="com.jd.tx.tcc.core.sync.SyncTransactionRunner"/>
 ```
 
 #### 4. 在代码中提交TCC事务

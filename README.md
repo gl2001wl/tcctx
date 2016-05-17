@@ -158,7 +158,31 @@ transactionRunner.run(context);
 ```
 #### 5. 异步重试任务的配置
 
-使用了elastic-job进行异步任务的驱动，样例：
+##### 5.1 使用Executor Scheduler进行异步任务的驱动
+
+初始化`com.jd.tx.tcc.core.retry.RetryJob`，并调用`start()`方法，会根据配置自动进行超时任务的重试。此种方式较为轻量级，但是不具备分片，HA，Failover能力。
+
+##### 5.2 使用elastic-job进行异步任务的驱动
+
+这种任务基于elastic-job进行调度，相对重量级，但是通过elastic-job实现了分片，Failover能力。但是需要单独部署一套elastic-job。
+引入tcctx-job依赖：
+```xml
+<project>
+    ...
+    <dependencies>
+        ...
+        <!-- tcctx 重试调度任务依赖 -->
+        <dependency>
+            <groupId>com.jd.tx</groupId>
+            <artifactId>tcctx-job</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        ...
+    </dependencies>
+    ...
+</project>
+```
+样例：
 ```xml
     <!-- 失败积分换券重处理作业-->
     <bean id="point2CouponRetryJob" class="com.jd.tx.tcc.job.SyncJobRetryScheduler">
@@ -188,7 +212,7 @@ transactionRunner.run(context);
 
 #### 6. 积压中任务的监控
 
-配置servlet：
+在J2EE容器的web.xml中配置servlet：
 ```xml
     <!--TccTx monitor page-->
     <servlet>

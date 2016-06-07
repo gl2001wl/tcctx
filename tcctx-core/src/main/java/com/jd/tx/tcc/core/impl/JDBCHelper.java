@@ -125,6 +125,13 @@ public class JDBCHelper {
                     .append(StringUtils.join(query.getExcludeStates(), "','"))
                     .append("')");
         }
+        if (CollectionUtils.isNotEmpty(query.getIncludeStates())) {
+            sql.append(" and ")
+                    .append(resource.getStateCol())
+                    .append(" in ('")
+                    .append(StringUtils.join(query.getIncludeStates(), "','"))
+                    .append("')");
+        }
         if (query.getShardingCount() > 1) {
             // Need sharding, got mode from sharding count.
             sql.append(" and MOD(UNIX_TIMESTAMP(").append(resource.getHandleTimeCol())

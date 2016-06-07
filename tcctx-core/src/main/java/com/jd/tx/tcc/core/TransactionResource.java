@@ -29,6 +29,11 @@ public class TransactionResource {
     private StateGenerator stateGenerator;
 
     /**
+     * If need to automatically update state by TCC framework
+     */
+    private boolean updateState = true;
+
+    /**
      *  Return the beginning state of first tx item.
      *  Return null if doesn't have tx items.
      * @return

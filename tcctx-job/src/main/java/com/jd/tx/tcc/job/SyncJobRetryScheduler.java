@@ -31,12 +31,11 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
     private static final Log log = LogFactory.getLog(SyncJobRetryScheduler.class);
 
-//    @Setter
-//    private int sleepTime;
+    private static final int DEFAULT_TIMEOUT_MIN = 2;
 
     private TransactionRunner transactionRunner;
 
-    Map<String, DataSource> dataSourceMap;
+    private Map<String, DataSource> dataSourceMap;
 
     private String dbPrefix;
 
@@ -46,6 +45,12 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
     private DataSource dataSource;
 
+    private List<String> includeStates;
+
+    private List<String> excludeStates;
+
+    private int timeoutMins = DEFAULT_TIMEOUT_MIN;
+
     public SyncJobRetryScheduler() {
     }
 
@@ -53,7 +58,6 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
         String dataSourceId = jsonObject.getString("dataSource");
         dataSourceId = dataSourceId == null? "" : dataSourceId;
 
-//        ApplicationContext appContext = SpingContextManager.get();
         String dataSourceKey = StringUtils.isBlank(dbPrefix) ? dataSourceId : dbPrefix + dataSourceId;
         return dataSourceMap.get(dataSourceKey);
     }
@@ -83,12 +87,18 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
         TransactionQuery query = new TransactionQuery(context, resource)
                 .setSharding(shardingContext.getShardingTotalCount(), shardingContext.getShardingItems())
-                .setMinutesBefore(2)
+                .setMinutesBefore(timeoutMins)
                 .setQueryRows(200);
         if (StringUtils.isNotBlank(lastId)) {
             query.setLastId(lastId);
         }
-        query.setExcludeStates(buildExcludeStates(resource.getResourceItems()));
+        if (CollectionUtils.isNotEmpty(includeStates)) {
+            query.setIncludeStates(includeStates);
+        } else if (CollectionUtils.isNotEmpty(excludeStates)) {
+            query.setExcludeStates(excludeStates);
+        } else {
+            query.setExcludeStates(buildExcludeStates(resource.getResourceItems()));
+        }
         List<TransactionEntity> timeoutItems = query.query();
 
         if (CollectionUtils.isNotEmpty(timeoutItems)) {
@@ -98,19 +108,6 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
             lastId = null;
         }
 
-        // Never stop the beat :)
-        // Check timeout records every #sleepTime# seconds.
-        // If current thread interrupted, need to restart it manually.
-//        while (CollectionUtils.isEmpty(timeoutItems)) {
-//            try {
-//                Thread.sleep(sleepTime * 1000);
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//                throw new RuntimeException(e.getMessage(), e);
-//            }
-//            timeoutItems = JDBCHelper.findTimeoutItems(context, resource,
-//                    shardingContext.getShardingTotalCount(), shardingContext.getShardingItems());
-//        }
         return timeoutItems;
     }
 
@@ -177,5 +174,17 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
     public void setDbPrefix(String dbPrefix) {
         this.dbPrefix = dbPrefix;
+    }
+
+    public void setTimeoutMins(int timeoutMins) {
+        this.timeoutMins = timeoutMins;
+    }
+
+    public void setIncludeStates(List<String> includeStates) {
+        this.includeStates = includeStates;
+    }
+
+    public void setExcludeStates(List<String> excludeStates) {
+        this.excludeStates = excludeStates;
     }
 }

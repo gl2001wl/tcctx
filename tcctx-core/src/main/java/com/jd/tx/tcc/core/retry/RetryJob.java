@@ -52,6 +52,12 @@ public class RetryJob {
     @Setter
     private int timeoutMinutes = 2;
 
+    @Setter
+    private List<String> includeStates;
+
+    @Setter
+    private List<String> excludeStates;
+
     private String lastId = null;
 
     public void start() {
@@ -87,7 +93,13 @@ public class RetryJob {
             if (StringUtils.isNotBlank(lastId)) {
                 query.setLastId(lastId);
             }
-            query.setExcludeStates(buildExcludeStates(resource.getResourceItems()));
+            if (CollectionUtils.isNotEmpty(includeStates)) {
+                query.setIncludeStates(includeStates);
+            } else if (CollectionUtils.isNotEmpty(excludeStates)) {
+                query.setExcludeStates(excludeStates);
+            } else {
+                query.setExcludeStates(buildExcludeStates(resource.getResourceItems()));
+            }
             List<TransactionEntity> timeoutItems = query.query();
 
             if (CollectionUtils.isNotEmpty(timeoutItems)) {

@@ -41,6 +41,9 @@ public class TransactionQuery {
     @Getter
     private List<String> excludeStates;
 
+    @Getter
+    private List<String> includeStates;
+
     public TransactionQuery(@NonNull TransactionContext context, @NonNull TransactionResource resource) {
         this.context = context;
         this.resource = resource;
@@ -72,8 +75,12 @@ public class TransactionQuery {
         return this;
     }
 
+    public TransactionQuery setIncludeStates(List<String> includeStates) {
+        this.includeStates = includeStates;
+        return this;
+    }
+
     public List<TransactionEntity> query() {
         return JDBCHelper.findTimeoutItems(this);
     }
-
 }

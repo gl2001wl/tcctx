@@ -55,6 +55,10 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     }
 
     private DataSource getDataSource(JSONObject jsonObject) {
+        if (dataSource != null) {
+            return dataSource;
+        }
+
         String dataSourceId = jsonObject.getString("dataSource");
         dataSourceId = dataSourceId == null? "" : dataSourceId;
 
@@ -186,5 +190,9 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
 
     public void setExcludeStates(List<String> excludeStates) {
         this.excludeStates = excludeStates;
+    }
+
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 }

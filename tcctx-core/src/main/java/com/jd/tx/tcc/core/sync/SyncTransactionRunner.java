@@ -47,6 +47,9 @@ public class SyncTransactionRunner implements TransactionRunner {
     }
 
     private TransactionState getState(String contextState, ResourceItem item) {
+        if (item.getStateMapping() == null || item.getStateMapping().isEmpty()) {
+            return null;
+        }
         if (contextState.equals(item.getStateMapping().get(ResourceItem.State.begin))) {
             return BeginState.instance;
         }

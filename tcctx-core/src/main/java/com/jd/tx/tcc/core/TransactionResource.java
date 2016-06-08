@@ -39,7 +39,7 @@ public class TransactionResource {
      * @return
      */
     public String getBeginningState() {
-        if (CollectionUtils.isEmpty(resourceItems)) {
+        if (CollectionUtils.isEmpty(resourceItems) || resourceItems.get(0).getStateMapping() == null) {
             return null;
         }
         return (String) resourceItems.get(0).getStateMapping().get(ResourceItem.State.begin);

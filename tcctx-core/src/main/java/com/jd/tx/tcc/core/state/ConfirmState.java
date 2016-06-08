@@ -18,10 +18,12 @@ public class ConfirmState implements TransactionState {
         try {
             ResourceItemLinkedList linkedItem = stateContext.getItemLinkedList();
 
-            if (!linkedItem.getItem().getStateMapping().get(ResourceItem.State.confirmSuccess)
-                    .equals(
-                            stateContext.getTransactionContext().getState()
-                    )) {
+            if (linkedItem.getItem().getStateMapping() == null ||
+                    !linkedItem.getItem().getStateMapping().containsKey(ResourceItem.State.confirmSuccess) ||
+                    !linkedItem.getItem().getStateMapping().get(ResourceItem.State.confirmSuccess)
+                            .equals(
+                                    stateContext.getTransactionContext().getState()
+                            )) {
                 TransactionAction.confirmAction.action(stateContext.getTransactionContext(), stateContext.getResource(), linkedItem.getItem());
             }
             stateContext.getTransactionContext().setState(null);

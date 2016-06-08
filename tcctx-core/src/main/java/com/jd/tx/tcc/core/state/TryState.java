@@ -18,7 +18,9 @@ public class TryState implements TransactionState {
         try {
             ResourceItemLinkedList linkedItem = stateContext.getItemLinkedList();
 
-            if (!linkedItem.getItem().getStateMapping().get(ResourceItem.State.trySuccess)
+            if (linkedItem.getItem().getStateMapping() == null ||
+                    !linkedItem.getItem().getStateMapping().containsKey(ResourceItem.State.trySuccess) ||
+                    !linkedItem.getItem().getStateMapping().get(ResourceItem.State.trySuccess)
                     .equals(
                             stateContext.getTransactionContext().getState()
                     )) {

@@ -7,19 +7,22 @@ package com.jd.tx.tcc.core;
 public interface TransactionRunner {
 
     /**
-     *  Begin execute a TCC transaction
+     * Begin execute a TCC transaction
+     *
      * @param context
      */
     void run(TransactionContext context);
 
     /**
-     *  Set the transactionManager before execute
+     * Set the transactionManager before execute
+     *
      * @param transactionManager
      */
     void setTransactionManager(TransactionManager transactionManager);
 
     /**
-     *  Returen transactionManager
+     * Return transactionManager
+     *
      * @return
      */
     TransactionManager getTransactionManager();

@@ -8,6 +8,7 @@ import com.jd.tx.tcc.core.sync.SyncTransactionRunner;
 import com.jd.tx.tcc.core.test.hsql.HsqlDatabase;
 import com.jd.tx.tcc.core.test.hsql.TestTableManager;
 import com.jd.tx.tcc.core.test.mock.MockResourceItem;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
@@ -26,9 +27,8 @@ import static org.mockito.Mockito.verify;
  * @author Leon Guo
  *         Creation Date: 2016/3/10
  */
+@Slf4j
 public class TestTransactionRunner {
-
-    private static final Logger LOG = LoggerFactory.getLogger(TestTransactionRunner.class);
 
     private TransactionRunner txRunner;
 
@@ -65,7 +65,7 @@ public class TestTransactionRunner {
 
     @Test
     public void testSimpleFlow() throws SQLException {
-        LOG.info("begin test tx runner");
+        log.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock().emptyCommit());
         txRes.getResourceItems().add(MockResourceItem.buildMock().emptyCommit().noTry());
         txRes.init();
@@ -83,7 +83,7 @@ public class TestTransactionRunner {
         verify(txRes.getResourceItems().get(1), times(0)).tryTx(any(TransactionContext.class));
 
         String dbValue = TestTableManager.query("999");
-        LOG.info(dbValue);
+        log.info(dbValue);
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         Assert.assertEquals("[999, "
                 + txRes.getResourceItems().get(1).getStateMapping().get(ResourceItem.State.confirmSuccess)
@@ -94,7 +94,7 @@ public class TestTransactionRunner {
 
     @Test
     public void testInterruptCommitFlow() throws SQLException {
-        LOG.info("begin test tx runner");
+        log.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().noTry().throwUnawareExWhenCommit());
         txRes.getResourceItems().add(MockResourceItem.buildMock().noTry());
@@ -108,7 +108,7 @@ public class TestTransactionRunner {
             txRunner.run(context);
             fail("No SOATxUnawareException be thrown!");
         } catch (SOATxUnawareException e) {
-            LOG.info("got SOATxUnawareException successful!");
+            log.info("got SOATxUnawareException successful!");
         }
 
         verify(txRes.getResourceItems().get(0), times(1)).confirmTx(any(TransactionContext.class));
@@ -124,7 +124,7 @@ public class TestTransactionRunner {
         verify(txRes.getResourceItems().get(2), times(0)).tryTx(any(TransactionContext.class));
 
         String dbValue = TestTableManager.query("998");
-        LOG.info(dbValue);
+        log.info(dbValue);
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         //the state is the success state of last item, waiting for retrying.
         Assert.assertEquals("[998, "
@@ -136,7 +136,7 @@ public class TestTransactionRunner {
 
     @Test
     public void testCancelCommitFlow() throws SQLException {
-        LOG.info("begin test tx runner");
+        log.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().noTry().throwUnrecoverableExWhenCommit());
         txRes.getResourceItems().add(MockResourceItem.buildMock().noTry().noCancel());
@@ -148,7 +148,7 @@ public class TestTransactionRunner {
             txRunner.run(context);
             fail("No SOATxUnrecoverableException be thrown!");
         } catch (SOATxUnrecoverableException e) {
-            LOG.info("got SOATxUnrecoverableException successful!");
+            log.info("got SOATxUnrecoverableException successful!");
         }
 
         verify(txRes.getResourceItems().get(0), times(1)).confirmTx(any(TransactionContext.class));
@@ -164,7 +164,7 @@ public class TestTransactionRunner {
         verify(txRes.getResourceItems().get(2), times(0)).tryTx(any(TransactionContext.class));
 
         String dbValue = TestTableManager.query("997");
-        LOG.info(dbValue);
+        log.info(dbValue);
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         //the state is the canceled successful of the first item, means all items have been canceled.
         Assert.assertEquals("[997, "
@@ -176,7 +176,7 @@ public class TestTransactionRunner {
 
     @Test
     public void testInterruptTryFlow() throws SQLException {
-        LOG.info("begin test tx runner");
+        log.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().throwUnawareExWhenTry());
         txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry());
@@ -188,7 +188,7 @@ public class TestTransactionRunner {
             txRunner.run(context);
             fail("No SOATxUnawareException be thrown!");
         } catch (SOATxUnawareException e) {
-            LOG.info("got SOATxUnawareException successful!");
+            log.info("got SOATxUnawareException successful!");
         }
 
         verify(txRes.getResourceItems().get(0), times(0)).confirmTx(any(TransactionContext.class));
@@ -204,7 +204,7 @@ public class TestTransactionRunner {
         verify(txRes.getResourceItems().get(2), times(0)).tryTx(any(TransactionContext.class));
 
         String dbValue = TestTableManager.query("996");
-        LOG.info(dbValue);
+        log.info(dbValue);
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         Assert.assertEquals("[996, "
                         + txRes.getResourceItems().get(0).getStateMapping().get(ResourceItem.State.trySuccess)
@@ -215,7 +215,7 @@ public class TestTransactionRunner {
 
     @Test
     public void testCancelTryFlow() throws SQLException {
-        LOG.info("begin test tx runner");
+        log.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().throwUnrecoverableExWhenTry());
         txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry());
@@ -227,7 +227,7 @@ public class TestTransactionRunner {
             txRunner.run(context);
             fail("No SOATxUnrecoverableException be thrown!");
         } catch (SOATxUnrecoverableException e) {
-            LOG.info("got SOATxUnrecoverableException successful!");
+            log.info("got SOATxUnrecoverableException successful!");
         }
 
         verify(txRes.getResourceItems().get(0), times(0)).confirmTx(any(TransactionContext.class));
@@ -243,7 +243,7 @@ public class TestTransactionRunner {
         verify(txRes.getResourceItems().get(2), times(0)).tryTx(any(TransactionContext.class));
 
         String dbValue = TestTableManager.query("995");
-        LOG.info(dbValue);
+        log.info(dbValue);
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         Assert.assertEquals("[995, "
                         + txRes.getResourceItems().get(0).getStateMapping().get(ResourceItem.State.cancelSuccess)
@@ -254,7 +254,7 @@ public class TestTransactionRunner {
 
     @Test
     public void testInterruptCancelFlow() throws SQLException {
-        LOG.info("begin test tx runner");
+        log.info("begin test tx runner");
         txRes.getResourceItems().add(MockResourceItem.buildMock());
         txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry().throwUnawareExWhenCancel());
         txRes.getResourceItems().add(MockResourceItem.buildMock().emptyTry().throwUnrecoverableExWhenCommit());
@@ -266,7 +266,7 @@ public class TestTransactionRunner {
             txRunner.run(context);
             fail("No SOATxUnawareException be thrown!");
         } catch (SOATxUnawareException e) {
-            LOG.info("got SOATxUnawareException successful!");
+            log.info("got SOATxUnawareException successful!");
         }
 
         verify(txRes.getResourceItems().get(0), times(1)).confirmTx(any(TransactionContext.class));
@@ -282,7 +282,7 @@ public class TestTransactionRunner {
         verify(txRes.getResourceItems().get(2), times(1)).tryTx(any(TransactionContext.class));
 
         String dbValue = TestTableManager.query("994");
-        LOG.info(dbValue);
+        log.info(dbValue);
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         Assert.assertEquals("[994, "
                         + txRes.getResourceItems().get(1).getStateMapping().get(ResourceItem.State.cancelFailed)

@@ -10,6 +10,7 @@ import com.jd.tx.tcc.core.sync.SyncTransactionRunner;
 import com.jd.tx.tcc.core.test.hsql.HsqlDatabase;
 import com.jd.tx.tcc.core.test.hsql.TestTableManager;
 import com.jd.tx.tcc.core.test.mock.MockResourceItem;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,9 +28,8 @@ import java.util.Map;
  * @author Leon Guo
  *         Creation Date: 2016/4/27
  */
+@Slf4j
 public class TestJDBCHelper {
-
-    private static final Logger LOG = LoggerFactory.getLogger(TestJDBCHelper.class);
 
     private TransactionRunner txRunner;
 
@@ -75,7 +75,7 @@ public class TestJDBCHelper {
 
         List<TransactionEntity> timeoutItems = JDBCHelper.findTimeoutItems(query);
         for (TransactionEntity entity : timeoutItems) {
-            LOG.info(entity.toString());
+            log.info(entity.toString());
         }
     }
 

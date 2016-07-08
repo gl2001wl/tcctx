@@ -3,6 +3,7 @@ package com.jd.tx.tcc.job;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.dangdang.ddframe.job.api.JobExecutionMultipleShardingContext;
+import com.dangdang.ddframe.job.exception.JobException;
 import com.dangdang.ddframe.job.plugin.job.type.dataflow.AbstractBatchThroughputDataFlowElasticJob;
 import com.jd.tx.tcc.core.ResourceItem;
 import com.jd.tx.tcc.core.TransactionManager;
@@ -158,14 +159,8 @@ public class SyncJobRetryScheduler extends AbstractBatchThroughputDataFlowElasti
     }
 
     @Override
-    public boolean isStreamingProcess() {
-        return true;
-    }
-
-    @Override
-    public void handleJobExecutionException(JobExecutionException jobExecutionException) throws JobExecutionException {
-//        jobExecutionException.setUnscheduleAllTriggers(true);
-        throw jobExecutionException;
+    public void handleJobExecutionException(final JobException jobException) {
+        throw jobException;
     }
 
     public void setTransactionRunner(TransactionRunner transactionRunner) {

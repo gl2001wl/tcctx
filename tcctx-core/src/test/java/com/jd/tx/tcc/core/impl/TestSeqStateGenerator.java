@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap;
 import com.jd.tx.tcc.core.ResourceItem;
 import com.jd.tx.tcc.core.TransactionResource;
 import com.jd.tx.tcc.core.test.mock.MockResourceItem;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,9 +21,8 @@ import static org.mockito.Mockito.*;
  * @author Leon Guo
  *         Creation Date: 2016/3/10
  */
+@Slf4j
 public class TestSeqStateGenerator {
-
-    private static final Logger LOG = LoggerFactory.getLogger(TestSeqStateGenerator.class);
 
     private SeqStateGenerator generator;
 
@@ -46,11 +46,11 @@ public class TestSeqStateGenerator {
 
         generator.generatorStates(resourceItems);
 
-        LOG.info(item1.getStateMapping().values().toString());
+        log.info(item1.getStateMapping().values().toString());
         Assert.assertEquals("[100, 111, 110, 121, 120, 131, 130]", item1.getStateMapping().values().toString());
-        LOG.info(item2.getStateMapping().values().toString());
+        log.info(item2.getStateMapping().values().toString());
         Assert.assertEquals("[200, 211, 210, 221, 220, 231, 230]", item2.getStateMapping().values().toString());
-        LOG.info(item3.getStateMapping().values().toString());
+        log.info(item3.getStateMapping().values().toString());
         Assert.assertEquals("[300, 311, 310, 321, 320, 331, 330]", item3.getStateMapping().values().toString());
     }
 
@@ -66,11 +66,11 @@ public class TestSeqStateGenerator {
 
         generator.generatorStates(resourceItems);
 
-        LOG.info(item1.getStateMapping().values().toString());
+        log.info(item1.getStateMapping().values().toString());
         Assert.assertEquals("[100, 111, 110, 121, 120, 131, 130]", item1.getStateMapping().values().toString());
-        LOG.info(item2.getStateMapping().values().toString());
+        log.info(item2.getStateMapping().values().toString());
         Assert.assertEquals("[200, 211, 210, 221, 220, 231, 230]", item2.getStateMapping().values().toString());
-        LOG.info(item3.getStateMapping().values().toString());
+        log.info(item3.getStateMapping().values().toString());
         Assert.assertEquals("[300, 311, 310, 321, 320, 331, 330]", item3.getStateMapping().values().toString());
     }
 
